@@ -41,6 +41,10 @@ export interface TextShow {
   parts: ShowPart[];
   /** Whether glyph geometry could be computed with real font metrics. */
   reliable: boolean;
+  /** /BaseFont of the font used, e.g. "ABCDEF+Arial-BoldMT". */
+  fontName: string;
+  /** Effective font size in view space. */
+  fontSize: number;
 }
 
 export interface ImageHit {
@@ -271,7 +275,14 @@ export function analyzePage(doc: PDFDocument, page: PDFPage): PageAnalysis {
           const s = a[a.length - 1];
           if (s && s.type === 'str') showString(s.value, parts, font);
         }
-        shows.push({ opIndex, parts, reliable: font.reliable });
+        const scaleY = toView(multiply(tm, gs.ctm));
+        shows.push({
+          opIndex,
+          parts,
+          reliable: font.reliable,
+          fontName: font.baseFont,
+          fontSize: Math.abs(gs.text.fontSize) * Math.hypot(scaleY[2], scaleY[3]),
+        });
         break;
       }
       case 'Do': {

@@ -9,6 +9,8 @@ export interface FontInfo {
   widthOf(code: number): number;
   /** False when widths are guessed (e.g. unusual CMaps or missing metrics). */
   reliable: boolean;
+  /** PostScript name from /BaseFont (may be empty). */
+  baseFont: string;
 }
 
 const winAnsiCodeToName = new Map<number, string>();
@@ -74,12 +76,13 @@ function nameOf(doc: PDFDocument, obj: PDFObject | undefined): string | undefine
   return v instanceof PDFName ? v.decodeText() : undefined;
 }
 
-const FALLBACK_FONT: FontInfo = { bytesPerCode: 1, widthOf: () => 0.5, reliable: false };
+const FALLBACK_FONT: FontInfo = { bytesPerCode: 1, widthOf: () => 0.5, reliable: false, baseFont: '' };
 
 export function loadFontInfo(doc: PDFDocument, fontObj: PDFObject | undefined): FontInfo {
   const font = dict(doc, fontObj);
   if (!font) return FALLBACK_FONT;
   const subtype = nameOf(doc, font.get(PDFName.of('Subtype')));
+  const baseFont = nameOf(doc, font.get(PDFName.of('BaseFont'))) ?? '';
 
   if (subtype === 'Type0') {
     const encoding = nameOf(doc, font.get(PDFName.of('Encoding')));
@@ -109,6 +112,7 @@ export function loadFontInfo(doc: PDFDocument, fontObj: PDFObject | undefined): 
       bytesPerCode: 2,
       widthOf: (code) => (widths.get(code) ?? dw) / 1000,
       reliable: encoding === 'Identity-H' || encoding === 'Identity-V',
+      baseFont,
     };
   }
 
@@ -133,10 +137,10 @@ export function loadFontInfo(doc: PDFDocument, fontObj: PDFObject | undefined): 
         return (w ?? missing) * scale;
       },
       reliable: true,
+      baseFont,
     };
   }
 
-  const baseFont = nameOf(doc, font.get(PDFName.of('BaseFont'))) ?? '';
   const std = standardFontFor(baseFont);
   if (std) {
     const metrics = loadStandardFont(std);
@@ -157,7 +161,8 @@ export function loadFontInfo(doc: PDFDocument, fontObj: PDFObject | undefined): 
         return (typeof w === 'number' ? w : 500) / 1000;
       },
       reliable: true,
+      baseFont,
     };
   }
-  return FALLBACK_FONT;
+  return { ...FALLBACK_FONT, baseFont };
 }

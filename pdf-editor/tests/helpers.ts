@@ -20,14 +20,14 @@ export interface ExtractedPage {
 
 /** Loads a PDF with pdf.js (as the browser app does) and extracts text per page. */
 export async function extractPdf(bytes: Uint8Array): Promise<ExtractedPage[]> {
-  const task = getDocument({ data: bytes.slice(), useWorkerFetch: false, isEvalSupported: false, standardFontDataUrl });
+  const task = getDocument({ data: bytes.slice(), useWorkerFetch: false, standardFontDataUrl });
   const pdf = await task.promise;
   const pages: ExtractedPage[] = [];
   for (let i = 1; i <= pdf.numPages; i++) {
     const page = await pdf.getPage(i);
     const viewport = page.getViewport({ scale: 1 });
     const content = await page.getTextContent();
-    const items = content.items.filter((it): it is RawTextItem & { str: string } => 'str' in it) as RawTextItem[];
+    const items = content.items.filter((it) => 'str' in it) as RawTextItem[];
     const ops = await page.getOperatorList();
     const imageOps = new Set<number>([OPS.paintImageXObject, OPS.paintInlineImageXObject, OPS.paintImageMaskXObject]);
     const imageCount = ops.fnArray.filter((fn) => imageOps.has(fn)).length;

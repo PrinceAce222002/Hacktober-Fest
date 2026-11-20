@@ -5,7 +5,10 @@
   "description": "Free, fully client-side PDF editor: edit text, erase, annotate, reorganize pages and download.",
   "type": "module",
   "scripts": {
+    "assets": "node scripts/copy-pdfjs-assets.mjs",
+    "predev": "npm run assets",
     "dev": "vite",
+    "prebuild": "npm run assets",
     "build": "tsc -b && vite build",
     "preview": "vite preview",
     "test": "vitest run",
